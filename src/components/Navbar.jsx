@@ -1,0 +1,39 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Stethoscope, User, Menu } from 'lucide-react';
+
+const Navbar = () => {
+    return (
+        <nav className="bg-white shadow-sm sticky top-0 z-50">
+            <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
+                <Link to="/" className="flex items-center gap-2 group">
+                    <div className="bg-lavender-100 p-2 rounded-lg group-hover:bg-lavender-200 transition-colors">
+                        <Stethoscope className="w-6 h-6 text-lavender-600" />
+                    </div>
+                    <span className="text-xl font-bold bg-gradient-to-r from-lavender-700 to-lavender-500 bg-clip-text text-transparent">
+                        MediConnect
+                    </span>
+                </Link>
+
+                {/* Desktop Menu */}
+                <div className="hidden md:flex items-center gap-8">
+                    <Link to="/" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Home</Link>
+                    <Link to="/appointments" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Appointments</Link>
+                    <Link to="/doctors" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Find Doctors</Link>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <Link to="/login" className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-lavender-200 hover:bg-lavender-50 text-lavender-700 font-medium transition-all">
+                        <User className="w-4 h-4" />
+                        <span>Login</span>
+                    </Link>
+                    <button className="md:hidden p-2 text-gray-600">
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </div>
+            </div>
+        </nav>
+    );
+};
+
+export default Navbar;
