@@ -5,7 +5,7 @@ const User = require('../models/User.cjs');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body; // Accept role
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: 'All fields are required' });
@@ -26,13 +26,14 @@ const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
+            role: role || 'patient', // Default to patient
         });
 
         await newUser.save();
 
-        const token = jwt.sign({ id: newUser._id, email: newUser.email }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newUser._id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '1h' });
 
-        res.status(201).json({ message: 'User registered successfully', token, user: { id: newUser._id, name, email } });
+        res.status(201).json({ message: 'User registered successfully', token, user: { id: newUser._id, name, email, role: newUser.role } });
     } catch (error) {
         console.error('Registration Error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -57,9 +58,9 @@ const login = async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email } });
+        res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ error: 'Internal server error' });

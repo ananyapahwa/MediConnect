@@ -19,10 +19,12 @@ mongoose.connect(MONGO_URI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 const protectedRoutes = require('./routes/protectedRoutes.cjs');
+const doctorRoutes = require('./routes/doctorRoutes.cjs');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
+app.use('/api/doctor', doctorRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

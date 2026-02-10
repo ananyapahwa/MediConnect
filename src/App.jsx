@@ -5,20 +5,19 @@ import Home from './pages/Home';
 import Doctors from './pages/Doctors';
 import Appointments from './pages/Appointments';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import DoctorDashboard from './pages/DoctorDashboard';
 
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout><Home /></Layout>} />
+        <Route path="/appointments" element={<Layout><Appointments /></Layout>} />
+        <Route path="/doctors" element={<Layout><Doctors /></Layout>} />
+        <Route path="/login" element={<Layout><Login /></Layout>} />
+        <Route path="/register" element={<Layout><Register /></Layout>} />
+        <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+      </Routes>
     </Router>
   );
 }
