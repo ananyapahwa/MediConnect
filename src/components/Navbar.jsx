@@ -1,8 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Stethoscope, User, Menu } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Stethoscope, User, Menu, LogOut } from 'lucide-react';
 
 const Navbar = () => {
+    const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
+
     return (
         <nav className="bg-white shadow-sm sticky top-0 z-50">
             <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
@@ -23,10 +33,20 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link to="/login" className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-lavender-200 hover:bg-lavender-50 text-lavender-700 font-medium transition-all">
-                        <User className="w-4 h-4" />
-                        <span>Login</span>
-                    </Link>
+                    {token ? (
+                        <div className="flex items-center gap-4">
+                            <span className="text-gray-600 font-medium hidden md:block">Hi, {user.name ? user.name.split(' ')[0] : 'User'}</span>
+                            <button onClick={handleLogout} className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 hover:bg-red-50 text-red-600 font-medium transition-all">
+                                <LogOut className="w-4 h-4" />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <Link to="/login" className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-lavender-200 hover:bg-lavender-50 text-lavender-700 font-medium transition-all">
+                            <User className="w-4 h-4" />
+                            <span>Login</span>
+                        </Link>
+                    )}
                     <button className="md:hidden p-2 text-gray-600">
                         <Menu className="w-6 h-6" />
                     </button>

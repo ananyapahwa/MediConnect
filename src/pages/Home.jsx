@@ -13,13 +13,15 @@ const Home = () => {
         { title: 'Weight', value: '70 kg', icon: User, color: 'text-purple-500', bg: 'bg-purple-50' },
     ];
 
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-20">
 
             {/* Welcome Section */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Good Morning, Alex</h1>
+                    <h1 className="text-3xl font-bold text-gray-800">Good Morning, {user.name || 'User'}</h1>
                     <p className="text-gray-500 mt-1">Here's your health overview for today.</p>
                 </div>
                 <div className="text-right hidden md:block">
