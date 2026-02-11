@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Star, Calendar } from 'lucide-react';
 import BookingModal from '../components/BookingModal';
+import Popup from '../components/Popup';
 
 const Doctors = () => {
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [popup, setPopup] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'success',
+        onClose: () => { }
+    });
 
     useEffect(() => {
         fetchDoctors();
@@ -28,31 +36,60 @@ const Doctors = () => {
     const handleBookAppointment = async (appointmentData) => {
         const token = localStorage.getItem('token');
         if (!token) {
-            alert('Please login to book an appointment');
+            setPopup({
+                isOpen: true,
+                title: 'Login Required',
+                message: 'Please login to book an appointment',
+                type: 'error',
+                onClose: () => setPopup(prev => ({ ...prev, isOpen: false }))
+            });
             return;
         }
 
-        const res = await fetch('http://localhost:3000/api/appointments/book', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(appointmentData)
-        });
+        try {
+            const res = await fetch('http://localhost:3000/api/appointments/book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(appointmentData)
+            });
 
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.message || 'Booking failed');
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Booking failed');
+            }
+
+            setPopup({
+                isOpen: true,
+                title: 'Success',
+                message: 'Appointment booked successfully!',
+                type: 'success',
+                onClose: () => setPopup(prev => ({ ...prev, isOpen: false }))
+            });
+        } catch (error) {
+            setPopup({
+                isOpen: true,
+                title: 'Booking Failed',
+                message: error.message,
+                type: 'error',
+                onClose: () => setPopup(prev => ({ ...prev, isOpen: false }))
+            });
         }
-
-        alert('Appointment booked successfully!');
     };
 
     if (loading) return <div className="text-center p-8">Loading doctors...</div>;
 
     return (
         <div className="space-y-6 animate-fade-in-up">
+            <Popup
+                isOpen={popup.isOpen}
+                onClose={popup.onClose}
+                title={popup.title}
+                message={popup.message}
+                type={popup.type}
+            />
             <h2 className="text-2xl font-bold text-gray-800">Find a Specialist</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">

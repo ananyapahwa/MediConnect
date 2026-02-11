@@ -4,7 +4,7 @@ const Doctor = require('../models/Doctor.cjs');
 exports.bookAppointment = async (req, res) => {
     try {
         const { doctorId, date, time, reason } = req.body;
-        const patientId = req.user.userId;
+        const patientId = req.user.id;
 
         // Check availability (Basic check - can be enhanced)
         // Ideally, check if the slot is within doctor's schedule and not already booked
@@ -32,7 +32,7 @@ exports.bookAppointment = async (req, res) => {
 exports.getDoctorAppointments = async (req, res) => {
     try {
         // Find the doctor profile associated with the current user
-        const doctor = await Doctor.findOne({ userId: req.user.userId });
+        const doctor = await Doctor.findOne({ userId: req.user.id });
         if (!doctor) {
             return res.status(404).json({ message: 'Doctor profile not found' });
         }
@@ -49,7 +49,7 @@ exports.getDoctorAppointments = async (req, res) => {
 
 exports.getPatientAppointments = async (req, res) => {
     try {
-        const appointments = await Appointment.find({ patientId: req.user.userId })
+        const appointments = await Appointment.find({ patientId: req.user.id })
             .populate({
                 path: 'doctorId',
                 populate: { path: 'userId', select: 'name' }
