@@ -1,38 +1,88 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapPin, Star, Calendar } from 'lucide-react';
-
-const doctors = [
-    { id: 1, name: 'Dr. Emily Chen', specialty: 'Cardiologist', rating: 4.9, location: 'New York, NY', image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300' },
-    { id: 2, name: 'Dr. James Wilson', specialty: 'Pediatrician', rating: 4.8, location: 'Brooklyn, NY', image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300' },
-    { id: 3, name: 'Dr. Sarah Johnson', specialty: 'Dermatologist', rating: 4.9, location: 'Queens, NY', image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=300&h=300' },
-    { id: 4, name: 'Dr. Michael Brown', specialty: 'Neurologist', rating: 4.7, location: 'New York, NY', image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300&h=300' },
-];
+import BookingModal from '../components/BookingModal';
 
 const Doctors = () => {
+    const [doctors, setDoctors] = useState([]);
+    const [selectedDoctor, setSelectedDoctor] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDoctors();
+    }, []);
+
+    const fetchDoctors = async () => {
+        try {
+            const res = await fetch('http://localhost:3000/api/doctor/all');
+            const data = await res.json();
+            if (res.ok) {
+                setDoctors(data);
+            }
+        } catch (error) {
+            console.error('Error fetching doctors:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBookAppointment = async (appointmentData) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please login to book an appointment');
+            return;
+        }
+
+        const res = await fetch('http://localhost:3000/api/appointments/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(appointmentData)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Booking failed');
+        }
+
+        alert('Appointment booked successfully!');
+    };
+
+    if (loading) return <div className="text-center p-8">Loading doctors...</div>;
+
     return (
         <div className="space-y-6 animate-fade-in-up">
             <h2 className="text-2xl font-bold text-gray-800">Find a Specialist</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 {doctors.map((doctor) => (
-                    <div key={doctor.id} className="bg-white p-6 rounded-xl shadow-sm border border-lavender-100 flex gap-4 hover:shadow-md transition-all">
-                        <img src={doctor.image} alt={doctor.name} className="w-24 h-24 rounded-lg object-cover" />
+                    <div key={doctor._id} className="bg-white p-6 rounded-xl shadow-sm border border-lavender-100 flex gap-4 hover:shadow-md transition-all">
+                        {/* Placeholder image or doctor's uploaded image if we had one */}
+                        <div className="w-24 h-24 rounded-lg bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold text-2xl">
+                            {doctor.userId.name.charAt(0)}
+                        </div>
                         <div className="flex-grow">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{doctor.name}</h3>
-                                    <p className="text-lavender-600 font-medium">{doctor.specialty}</p>
+                                    <h3 className="text-lg font-semibold text-gray-900">{doctor.userId.name}</h3>
+                                    <p className="text-lavender-600 font-medium">{doctor.specialization}</p>
+                                    <p className="text-xs text-gray-500">{doctor.experience} years exp.</p>
                                 </div>
                                 <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-2 py-1 rounded">
                                     <Star className="w-4 h-4 fill-current" />
-                                    <span>{doctor.rating}</span>
+                                    <span>{doctor.rating || 'New'}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 text-gray-500 text-sm mt-2">
                                 <MapPin className="w-4 h-4" />
-                                {doctor.location}
+                                {doctor.address}
                             </div>
-                            <button className="mt-4 w-full bg-lavender-100 hover:bg-lavender-200 text-lavender-700 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                            <div className="mt-2 text-sm font-medium text-gray-700">Fees: ${doctor.fees}</div>
+                            <button
+                                onClick={() => setSelectedDoctor(doctor)}
+                                className="mt-3 w-full bg-lavender-100 hover:bg-lavender-200 text-lavender-700 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                            >
                                 <Calendar className="w-4 h-4" />
                                 Book Appointment
                             </button>
@@ -40,6 +90,14 @@ const Doctors = () => {
                     </div>
                 ))}
             </div>
+
+            {selectedDoctor && (
+                <BookingModal
+                    doctor={selectedDoctor}
+                    onClose={() => setSelectedDoctor(null)}
+                    onBook={handleBookAppointment}
+                />
+            )}
         </div>
     );
 };

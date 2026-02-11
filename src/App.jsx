@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Doctors from './pages/Doctors';
 import Appointments from './pages/Appointments';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import DoctorDashboard from './pages/DoctorDashboard';
 
 function App() {

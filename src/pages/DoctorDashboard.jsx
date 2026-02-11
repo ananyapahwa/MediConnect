@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Users, Calendar, Settings, LogOut } from 'lucide-react';
+import { Activity, Users, Calendar, Settings, LogOut, Save, Clock, CheckCircle, XCircle } from 'lucide-react';
+import CalendarGrid from '../components/CalendarGrid';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [appointments, setAppointments] = useState([]);
+    const [profile, setProfile] = useState({
+        specialization: '',
+        experience: 0,
+        fees: 0,
+        phone: '',
+        address: '',
+        availability: []
+    });
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -17,12 +30,93 @@ const DoctorDashboard = () => {
 
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser.role !== 'doctor') {
-            navigate('/'); // Redirect non-doctors to home
+            navigate('/');
             return;
         }
 
         setUser(parsedUser);
+        fetchAppointments(token);
+        fetchProfile(token);
     }, [navigate]);
+
+    const fetchAppointments = async (token) => {
+        try {
+            const res = await fetch('http://localhost:3000/api/appointments/doctor', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) setAppointments(data);
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+        }
+    };
+
+    const fetchProfile = async (token) => {
+        try {
+            const res = await fetch('http://localhost:3000/api/doctor/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok && data) {
+                setProfile({
+                    specialization: data.specialization || '',
+                    experience: data.experience || 0,
+                    fees: data.fees || 0,
+                    phone: data.phone || '',
+                    address: data.address || '',
+                    availability: data.availability || []
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+        }
+    };
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage('');
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('http://localhost:3000/api/doctor/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(profile)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setMessage('Profile updated successfully!');
+            } else {
+                setMessage(data.message || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Update profile error:', error);
+            setMessage('Error updating profile');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAvailabilityChange = (index, field, value) => {
+        const newAvailability = [...profile.availability];
+        newAvailability[index][field] = value;
+        setProfile({ ...profile, availability: newAvailability });
+    };
+
+    const addAvailabilitySlot = () => {
+        setProfile({
+            ...profile,
+            availability: [...profile.availability, { day: 'Monday', startTime: '09:00', endTime: '17:00' }]
+        });
+    };
+
+    const removeAvailabilitySlot = (index) => {
+        const newAvailability = profile.availability.filter((_, i) => i !== index);
+        setProfile({ ...profile, availability: newAvailability });
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -35,7 +129,7 @@ const DoctorDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex">
             {/* Sidebar */}
-            <aside className="w-64 bg-white shadow-lg hidden md:block">
+            <aside className="w-64 bg-white shadow-lg hidden md:block fixed h-full z-10">
                 <div className="p-6 border-b">
                     <div className="flex items-center space-x-3">
                         <div className="h-8 w-8 bg-lavender-100 rounded-lg flex items-center justify-center">
@@ -43,25 +137,20 @@ const DoctorDashboard = () => {
                         </div>
                         <span className="text-xl font-bold text-gray-800">MediConnect</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500 uppercase tracking-wider font-semibold">Doctor Portal</p>
                 </div>
                 <nav className="p-4 space-y-2">
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 bg-lavender-50 text-lavender-700 rounded-xl">
+                    <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'dashboard' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <Activity className="h-5 w-5" />
                         <span className="font-medium">Dashboard</span>
-                    </a>
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
-                        <Users className="h-5 w-5" />
-                        <span className="font-medium">Patients</span>
-                    </a>
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
+                    </button>
+                    <button onClick={() => setActiveTab('appointments')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'appointments' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <Calendar className="h-5 w-5" />
                         <span className="font-medium">Appointments</span>
-                    </a>
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
+                    </button>
+                    <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <Settings className="h-5 w-5" />
-                        <span className="font-medium">Settings</span>
-                    </a>
+                        <span className="font-medium">Settings & Schedule</span>
+                    </button>
                 </nav>
                 <div className="absolute bottom-0 w-64 p-4 border-t">
                     <button onClick={handleLogout} className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors w-full">
@@ -72,54 +161,108 @@ const DoctorDashboard = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-8">
+            <main className="flex-1 p-8 ml-64">
                 <header className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Welcome back, Dr. {user.name}</h1>
-                        <p className="text-gray-600">Here's what's happening today.</p>
-                    </div>
-                    <div className="h-10 w-10 bg-lavender-200 rounded-full flex items-center justify-center text-lavender-700 font-bold border-2 border-white shadow-sm">
-                        {user.name.charAt(0)}
                     </div>
                 </header>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-3 bg-blue-50 rounded-xl">
-                                <Users className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-lg">+12%</span>
+                {activeTab === 'dashboard' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="text-2xl font-bold text-gray-900">{appointments.length}</h3>
+                            <p className="text-sm text-gray-500">Total Appointments</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">1,234</h3>
-                        <p className="text-sm text-gray-500">Total Patients</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-3 bg-lavender-50 rounded-xl">
-                                <Calendar className="h-6 w-6 text-lavender-600" />
-                            </div>
-                            <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-lg">+5%</span>
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">42</h3>
-                        <p className="text-sm text-gray-500">Appointments Today</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-3 bg-orange-50 rounded-xl">
-                                <Activity className="h-6 w-6 text-orange-600" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">Normal</span>
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">98%</h3>
-                        <p className="text-sm text-gray-500">Patient Satisfaction</p>
-                    </div>
-                </div>
+                )}
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                    <p className="text-gray-500">More dashboard features coming soon...</p>
-                </div>
+                {activeTab === 'appointments' && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-gray-900">Appointment Calendar</h2>
+                            <div className="flex gap-2">
+                                <span className="flex items-center text-xs text-gray-500"><span className="w-3 h-3 bg-lavender-600 rounded-full mr-1"></span> Selected</span>
+                                <span className="flex items-center text-xs text-gray-500"><span className="w-3 h-3 bg-red-100 border border-red-200 rounded-full mr-1"></span> Booked</span>
+                            </div>
+                        </div>
+                        <div className="p-6">
+                            {/* We need to pass the full list of appointments to the calendar to show 'Busy' slots */}
+                            {/* Ideally, CalendarGrid should take 'appointments' array and parse it */}
+                            {/* For now, we will map appointments to 'bookedSlots' format expected by CalendarGrid */}
+                            <CalendarGrid
+                                availability={profile.availability}
+                                bookedSlots={appointments}
+                                onSlotSelect={(slot) => console.log('Doctor selected slot:', slot)}
+                                isDoctorView={true}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'settings' && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">Profile & Schedule Settings</h2>
+                        {message && <div className={`p-4 mb-4 rounded-lg ${message.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{message}</div>}
+
+                        <form onSubmit={handleProfileUpdate} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                                    <input type="text" value={profile.specialization} onChange={(e) => setProfile({ ...profile, specialization: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-lavender-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Experience (Years)</label>
+                                    <input type="number" value={profile.experience} onChange={(e) => setProfile({ ...profile, experience: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-lavender-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fees ($)</label>
+                                    <input type="number" value={profile.fees} onChange={(e) => setProfile({ ...profile, fees: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-lavender-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                    <input type="text" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-lavender-500" required />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Clinic Address</label>
+                                    <textarea value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-lavender-500" rows="3" required></textarea>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Availability Schedule</h3>
+                                <div className="space-y-4">
+                                    {profile.availability.map((slot, index) => (
+                                        <div key={index} className="flex flex-wrap items-center gap-4 bg-gray-50 p-4 rounded-lg">
+                                            <select value={slot.day} onChange={(e) => handleAvailabilityChange(index, 'day', e.target.value)} className="px-4 py-2 rounded-lg border border-gray-200">
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                                                    <option key={day} value={day}>{day}</option>
+                                                ))}
+                                            </select>
+                                            <div className="flex items-center gap-2">
+                                                <input type="time" value={slot.startTime} onChange={(e) => handleAvailabilityChange(index, 'startTime', e.target.value)} className="px-4 py-2 rounded-lg border border-gray-200" required />
+                                                <span>to</span>
+                                                <input type="time" value={slot.endTime} onChange={(e) => handleAvailabilityChange(index, 'endTime', e.target.value)} className="px-4 py-2 rounded-lg border border-gray-200" required />
+                                            </div>
+                                            <button type="button" onClick={() => removeAvailabilitySlot(index)} className="text-red-500 hover:text-red-700">
+                                                <XCircle className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={addAvailabilitySlot} className="flex items-center gap-2 text-lavender-600 font-medium hover:text-lavender-700">
+                                        <Clock className="w-4 h-4" /> Add Slot
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button type="submit" disabled={loading} className="px-6 py-2 bg-lavender-600 text-white rounded-xl hover:bg-lavender-700 transition-colors flex items-center gap-2">
+                                    {loading ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </main>
         </div>
     );

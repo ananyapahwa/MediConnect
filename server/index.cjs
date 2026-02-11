@@ -1,8 +1,8 @@
 const express = require('express');
+require('dotenv').config(); // Load env vars first
 const cors = require('cors');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes.cjs'); // Import auth routes
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,11 +20,13 @@ mongoose.connect(MONGO_URI)
 
 const protectedRoutes = require('./routes/protectedRoutes.cjs');
 const doctorRoutes = require('./routes/doctorRoutes.cjs');
+const appointmentRoutes = require('./routes/appointmentRoutes.cjs');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 app.use('/api/doctor', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

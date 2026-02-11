@@ -4,11 +4,38 @@ const User = require('../models/User.cjs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
+const validatePassword = (password) => {
+    if (password.length < 8 || password.length > 15) {
+        return "Password must be at least 8 characters and at most 15 characters.";
+    }
+    if (!/\d/.test(password)) {
+        return "Password must contain at least one digit.";
+    }
+    if (!/[A-Z]/.test(password)) {
+        return "Password must contain at least one upper case alphabet.";
+    }
+    if (!/[a-z]/.test(password)) {
+        return "Password must contain at least one lower case alphabet.";
+    }
+    if (!/[!@#$%&*()-+=^]/.test(password)) {
+        return "Password must contain at least one special character which includes !@#$%&*()-+=^.";
+    }
+    if (/\s/.test(password)) {
+        return "Password doesn't contain any white space.";
+    }
+    return null;
+};
+
 const register = async (req, res) => {
     const { name, email, password, role } = req.body; // Accept role
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+        return res.status(400).json({ error: passwordError });
     }
 
     try {

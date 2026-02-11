@@ -1,12 +1,22 @@
 const express = require('express');
 const verifyToken = require('../middleware/authMiddleware.cjs');
 const roleMiddleware = require('../middleware/roleMiddleware.cjs');
+const { updateProfile, getDoctorProfile, getAllDoctors, getDoctorById } = require('../controllers/doctorController.cjs');
 
 const router = express.Router();
 
-// Protected Doctor Route
+// Public route to get all doctors
+router.get('/all', getAllDoctors);
+
+// Public route to get specific doctor details
+router.get('/:id', getDoctorById);
+
+// Protected Doctor Routes
 router.get('/dashboard', verifyToken, roleMiddleware('doctor'), (req, res) => {
     res.json({ message: 'Welcome to the Doctor Dashboard', user: req.user });
 });
+
+router.put('/profile', verifyToken, roleMiddleware('doctor'), updateProfile);
+router.get('/profile', verifyToken, roleMiddleware('doctor'), getDoctorProfile);
 
 module.exports = router;
