@@ -39,8 +39,51 @@ const Register = () => {
         });
     };
 
+    const validatePassword = (password) => {
+        // 1. Length 8-15 characters
+        if (password.length < 8 || password.length > 15) {
+            return "Password must be between 8 and 15 characters long.";
+        }
+
+        // 2. At least one digit
+        if (!/\d/.test(password)) {
+            return "Password must contain at least one digit.";
+        }
+
+        // 3. At least one upper case alphabet
+        if (!/[A-Z]/.test(password)) {
+            return "Password must contain at least one uppercase letter.";
+        }
+
+        // 4. At least one lower case alphabet
+        if (!/[a-z]/.test(password)) {
+            return "Password must contain at least one lowercase letter.";
+        }
+
+        // 5. At least one special character (!@#$%&*()-+=^)
+        // Note: Escaping special regex characters
+        if (!/[!@#$%&*()\-=+^]/.test(password)) {
+            return "Password must contain at least one special character (!@#$%&*()-+=^).";
+        }
+
+        // 6. No white space
+        if (/\s/.test(password)) {
+            return "Password must not contain any white space.";
+        }
+
+        return null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Password Validation
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) {
+            showPopup("Validation Error", passwordError, "error");
+            return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
             showPopup("Error", "Passwords don't match!", "error");
             return;
