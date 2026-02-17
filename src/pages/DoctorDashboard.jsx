@@ -326,9 +326,9 @@ const DoctorDashboard = () => {
                                         <div className="flex items-center gap-3">
                                             <AlertCircle className="w-4 h-4 text-gray-400" />
                                             <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-700'
-                                                    : selectedAppointment.status === 'completed' ? 'bg-blue-100 text-blue-700'
-                                                        : selectedAppointment.status === 'cancelled' ? 'bg-red-100 text-red-700'
-                                                            : 'bg-yellow-100 text-yellow-700'
+                                                : selectedAppointment.status === 'completed' ? 'bg-blue-100 text-blue-700'
+                                                    : selectedAppointment.status === 'cancelled' ? 'bg-red-100 text-red-700'
+                                                        : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {selectedAppointment.status?.charAt(0).toUpperCase() + selectedAppointment.status?.slice(1)}
                                             </span>
