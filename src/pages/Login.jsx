@@ -24,7 +24,13 @@ const Login = () => {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                navigate('/');
+
+                // Redirect based on user role
+                if (data.user.role === 'doctor') {
+                    navigate('/doctor-home');
+                } else {
+                    navigate('/patient-home');
+                }
             } else {
                 alert(data.error || 'Login failed');
             }

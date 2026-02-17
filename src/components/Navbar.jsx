@@ -13,10 +13,36 @@ const Navbar = () => {
         navigate('/login');
     };
 
+    // Determine home link based on role
+    const homeLink = user.role === 'doctor' ? '/doctor-home' : '/patient-home';
+
+    // Define navigation items based on role
+    const getNavItems = () => {
+        if (!token) {
+            return [];
+        }
+
+        if (user.role === 'doctor') {
+            return [
+                { label: 'Home', path: '/doctor-home' },
+                { label: 'Dashboard', path: '/doctor-dashboard' },
+            ];
+        } else {
+            // Patient navigation
+            return [
+                { label: 'Home', path: '/patient-home' },
+                { label: 'Appointments', path: '/appointments' },
+                { label: 'Find Doctors', path: '/doctors' },
+            ];
+        }
+    };
+
+    const navItems = getNavItems();
+
     return (
         <nav className="bg-white shadow-sm sticky top-0 z-50">
             <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
-                <Link to="/" className="flex items-center gap-2 group">
+                <Link to={token ? homeLink : '/'} className="flex items-center gap-2 group">
                     <div className="bg-lavender-100 p-2 rounded-lg group-hover:bg-lavender-200 transition-colors">
                         <Stethoscope className="w-6 h-6 text-lavender-600" />
                     </div>
@@ -27,15 +53,24 @@ const Navbar = () => {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center gap-8">
-                    <Link to="/" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Home</Link>
-                    <Link to="/appointments" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Appointments</Link>
-                    <Link to="/doctors" className="text-gray-600 hover:text-lavender-600 font-medium transition-colors">Find Doctors</Link>
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className="text-gray-600 hover:text-lavender-600 font-medium transition-colors"
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                 </div>
 
                 <div className="flex items-center gap-4">
                     {token ? (
                         <div className="flex items-center gap-4">
-                            <span className="text-gray-600 font-medium hidden md:block">Hi, {user.name ? user.name.split(' ')[0] : 'User'}</span>
+                            <span className="text-gray-600 font-medium hidden md:block">
+                                Hi, {user.name ? user.name.split(' ')[0] : 'User'}
+                                {user.role === 'doctor' && <span className="text-lavender-600 ml-1">(Dr.)</span>}
+                            </span>
                             <button onClick={handleLogout} className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 hover:bg-red-50 text-red-600 font-medium transition-all">
                                 <LogOut className="w-4 h-4" />
                                 <span>Logout</span>

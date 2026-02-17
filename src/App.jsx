@@ -1,7 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+import PatientHome from './pages/PatientHome';
+import DoctorHome from './pages/DoctorHome';
 import Doctors from './pages/Doctors';
 import Appointments from './pages/Appointments';
 import Login from './pages/Login';
@@ -9,16 +11,40 @@ import Register from './pages/Register';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PrivateRoute from './components/PrivateRoute';
 
+// Helper component to redirect root path based on role
+const RootRedirect = () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === 'doctor') {
+    return <Navigate to="/doctor-home" replace />;
+  }
+
+  return <Navigate to="/patient-home" replace />;
+};
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<PrivateRoute><Layout><Home /></Layout></PrivateRoute>} />
-        <Route path="/appointments" element={<PrivateRoute><Layout><Appointments /></Layout></PrivateRoute>} />
-        <Route path="/doctors" element={<PrivateRoute><Layout><Doctors /></Layout></PrivateRoute>} />
-        <Route path="/login" element={<Layout><Login /></Layout>} />
-        <Route path="/register" element={<Layout><Register /></Layout>} />
-        <Route path="/doctor-dashboard" element={<PrivateRoute><DoctorDashboard /></PrivateRoute>} />
+        <Route path="/" element={<RootRedirect />} />
+
+        {/* Patient Routes */}
+        <Route path="/patient-home" element={<PrivateRoute allowedRoles={['patient']}><Layout><PatientHome /></Layout></PrivateRoute>} />
+        <Route path="/doctors" element={<PrivateRoute allowedRoles={['patient']}><Layout><Doctors /></Layout></PrivateRoute>} />
+        <Route path="/appointments" element={<PrivateRoute allowedRoles={['patient']}><Layout><Appointments /></Layout></PrivateRoute>} />
+
+        {/* Doctor Routes */}
+        <Route path="/doctor-home" element={<PrivateRoute allowedRoles={['doctor']}><Layout><DoctorHome /></Layout></PrivateRoute>} />
+        <Route path="/doctor-dashboard" element={<PrivateRoute allowedRoles={['doctor']}><DoctorDashboard /></PrivateRoute>} />
+
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
   );

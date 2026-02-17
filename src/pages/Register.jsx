@@ -8,7 +8,8 @@ const Register = () => {
         name: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        role: 'patient'
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -76,7 +77,7 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Password Validation
         const passwordError = validatePassword(formData.password);
         if (passwordError) {
@@ -98,7 +99,8 @@ const Register = () => {
                 body: JSON.stringify({
                     name: formData.name,
                     email: formData.email,
-                    password: formData.password
+                    password: formData.password,
+                    role: formData.role
                 }),
             });
 
@@ -107,7 +109,10 @@ const Register = () => {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                showPopup("Success", "Registration successful!", "success", () => navigate('/'));
+
+                // Redirect based on user role
+                const redirectPath = data.user.role === 'doctor' ? '/doctor-home' : '/patient-home';
+                showPopup("Success", "Registration successful!", "success", () => navigate(redirectPath));
             } else {
                 showPopup("Registration Failed", data.error || 'Registration failed', "error");
             }
@@ -126,21 +131,21 @@ const Register = () => {
                 message={popup.message}
                 type={popup.type}
             />
-            <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in-up">
-                <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-lg border border-lavender-100">
+            <div className="min-h-screen flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 bg-lavender-50">
+                <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-2xl shadow-lg border border-lavender-100">
 
                     {/* Header */}
                     <div className="text-center">
-                        <div className="mx-auto h-12 w-12 bg-lavender-100 rounded-xl flex items-center justify-center mb-4">
+                        <div className="mx-auto h-12 w-12 bg-lavender-100 rounded-xl flex items-center justify-center mb-3">
                             <Stethoscope className="h-8 w-8 text-lavender-600" />
                         </div>
-                        <h2 className="text-3xl font-extrabold text-gray-900">Create Account</h2>
-                        <p className="mt-2 text-sm text-gray-600">
+                        <h2 className="text-2xl font-extrabold text-gray-900">Create Account</h2>
+                        <p className="mt-1 text-sm text-gray-600">
                             Join MediConnect for better healthcare
                         </p>
                     </div>
 
-                    <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                    <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
 
                         {/* Name Field */}
                         <div className="relative group">
@@ -151,7 +156,7 @@ const Register = () => {
                                 name="name"
                                 type="text"
                                 required
-                                className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 focus:z-10 sm:text-sm transition-all"
+                                className="appearance-none relative block w-full px-3 py-2.5 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 sm:text-sm transition-all"
                                 placeholder="Full Name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -167,11 +172,40 @@ const Register = () => {
                                 name="email"
                                 type="email"
                                 required
-                                className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 focus:z-10 sm:text-sm transition-all"
+                                className="appearance-none relative block w-full px-3 py-2.5 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 sm:text-sm transition-all"
                                 placeholder="Email address"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">Register as</label>
+                            <div className="flex gap-4">
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="patient"
+                                        checked={formData.role === 'patient'}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        className="h-4 w-4 text-lavender-600 focus:ring-lavender-500 border-gray-300"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">Patient</span>
+                                </label>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="doctor"
+                                        checked={formData.role === 'doctor'}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        className="h-4 w-4 text-lavender-600 focus:ring-lavender-500 border-gray-300"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">Doctor</span>
+                                </label>
+                            </div>
                         </div>
 
                         {/* Password Field */}
@@ -183,7 +217,7 @@ const Register = () => {
                                 name="password"
                                 type={showPassword ? "text" : "password"}
                                 required
-                                className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 focus:z-10 sm:text-sm transition-all"
+                                className="appearance-none relative block w-full px-3 py-2.5 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 sm:text-sm transition-all"
                                 placeholder="Password"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -210,7 +244,7 @@ const Register = () => {
                                 name="confirmPassword"
                                 type={showConfirmPassword ? "text" : "password"}
                                 required
-                                className="appearance-none relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 focus:z-10 sm:text-sm transition-all"
+                                className="appearance-none relative block w-full px-3 py-2.5 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 sm:text-sm transition-all"
                                 placeholder="Confirm Password"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -231,14 +265,14 @@ const Register = () => {
                         <div>
                             <button
                                 type="submit"
-                                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-lavender-600 hover:bg-lavender-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lavender-500 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-lavender-600 hover:bg-lavender-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lavender-500 transition-all shadow-md hover:shadow-lg"
                             >
                                 Sign up
                             </button>
                         </div>
                     </form>
 
-                    <div className="text-center mt-4">
+                    <div className="text-center">
                         <p className="text-sm text-gray-600">
                             Already have an account?{' '}
                             <Link to="/login" className="font-medium text-lavender-600 hover:text-lavender-500 hover:underline">
