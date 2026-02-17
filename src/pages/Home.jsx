@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { MessageSquare, Calendar, User, Activity, Heart, Droplet, ChevronDown, ChevronUp, Bot, Send } from 'lucide-react';
+import { MessageSquare, Calendar, User, Activity, Heart, Droplet, Bot, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [showProjectInfo, setShowProjectInfo] = useState(false);
+
 
     const stats = [
         { title: 'Heart Rate', value: '72 bpm', icon: Heart, color: 'text-red-500', bg: 'bg-red-50' },
@@ -73,30 +73,26 @@ const Home = () => {
                         </div>
                     </div>
 
-                    {/* Project Info Collapsible */}
-                    <div className="border border-lavender-200 rounded-xl overflow-hidden bg-white">
-                        <button
-                            onClick={() => setShowProjectInfo(!showProjectInfo)}
-                            className="w-full flex items-center justify-between p-4 bg-lavender-50 hover:bg-lavender-100 transition-colors text-left"
-                        >
-                            <span className="font-semibold text-lavender-800">About MediConnect Portal</span>
-                            {showProjectInfo ? <ChevronUp className="w-5 h-5 text-lavender-600" /> : <ChevronDown className="w-5 h-5 text-lavender-600" />}
-                        </button>
-
-                        {showProjectInfo && (
-                            <div className="p-6 space-y-4 text-gray-600 leading-relaxed border-t border-lavender-100 animate-fade-in-up">
-                                <div>
-                                    <h3 className="font-semibold text-gray-800">Project Title</h3>
-                                    <p>MediConnect: Doctor Assistance and Appointment Portal</p>
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-800">Abstract</h3>
-                                    <p className="text-justify text-sm">
-                                        The MediConnect: Doctor Assistance and Appointment Portal is created to make it easier for patients to connect with doctors without unnecessary delays. The main motivation behind this project is to reduce long waiting times at hospitals and help patients get medical guidance in a quicker and more convenient way. Many people face difficulties in booking appointments or reaching doctors for small doubts and follow-up consultations, which inspired the choice of this project. This portal allows patients to book appointments online based on doctor availability and also chat with doctors in real time for basic consultations and guidance. The project is feasible to implement using commonly available web technologies and real-time communication tools, making it secure, scalable, and easy to use. Overall, the system aims to improve patient experience while making healthcare services more accessible and efficient.
-                                    </p>
-                                </div>
+                    {/* How It Works */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-lavender-100">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">How It Works</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-blue-50">
+                                <div className="bg-blue-100 text-blue-700 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mb-3">1</div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Find a Doctor</h3>
+                                <p className="text-sm text-gray-500">Browse our verified doctors by specialization and availability.</p>
                             </div>
-                        )}
+                            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-lavender-50">
+                                <div className="bg-lavender-100 text-lavender-700 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mb-3">2</div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Book Appointment</h3>
+                                <p className="text-sm text-gray-500">Choose a convenient time slot and confirm your booking instantly.</p>
+                            </div>
+                            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-green-50">
+                                <div className="bg-green-100 text-green-700 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mb-3">3</div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Get Consultation</h3>
+                                <p className="text-sm text-gray-500">Visit your doctor or chat online for quick medical guidance.</p>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
