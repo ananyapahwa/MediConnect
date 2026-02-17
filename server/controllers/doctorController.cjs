@@ -3,7 +3,7 @@ const User = require('../models/User.cjs');
 
 exports.updateProfile = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
         const { specialization, experience, fees, phone, address, availability } = req.body;
 
         let doctor = await Doctor.findOne({ userId });
@@ -40,7 +40,7 @@ exports.updateProfile = async (req, res) => {
 
 exports.getDoctorProfile = async (req, res) => {
     try {
-        const doctor = await Doctor.findOne({ userId: req.user.userId }).populate('userId', 'name email');
+        const doctor = await Doctor.findOne({ userId: req.user.id }).populate('userId', 'name email');
         if (!doctor) {
             return res.status(404).json({ message: 'Doctor profile not found' });
         }
@@ -55,6 +55,7 @@ exports.getAllDoctors = async (req, res) => {
         const doctors = await Doctor.find().populate('userId', 'name email');
         res.json(doctors);
     } catch (error) {
+        console.error('Error in getAllDoctors:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

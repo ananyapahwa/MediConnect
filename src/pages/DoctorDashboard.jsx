@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Users, Calendar, Settings, LogOut, Save, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Activity, Users, Calendar, Settings, LogOut, Save, Clock, CheckCircle, XCircle, X, Mail, FileText, AlertCircle } from 'lucide-react';
 import CalendarGrid from '../components/CalendarGrid';
 
 const DoctorDashboard = () => {
@@ -18,6 +18,7 @@ const DoctorDashboard = () => {
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -193,7 +194,11 @@ const DoctorDashboard = () => {
                             <CalendarGrid
                                 availability={profile.availability}
                                 bookedSlots={appointments}
-                                onSlotSelect={(slot) => console.log('Doctor selected slot:', slot)}
+                                onSlotSelect={(slot) => {
+                                    if (slot.booking) {
+                                        setSelectedAppointment(slot.booking);
+                                    }
+                                }}
                                 isDoctorView={true}
                             />
                         </div>
@@ -261,6 +266,82 @@ const DoctorDashboard = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                )}
+
+                {/* Appointment Detail Modal */}
+                {selectedAppointment && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedAppointment(null)}>
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+                            <div className="bg-gradient-to-r from-lavender-500 to-purple-600 p-6 text-white">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-xl font-bold">Appointment Details</h3>
+                                        <p className="text-lavender-100 text-sm mt-1">
+                                            {new Date(selectedAppointment.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at{' '}
+                                            {(() => { const [h, m] = selectedAppointment.time.split(':'); const hr = parseInt(h); return `${(hr % 12 || 12).toString().padStart(2, '0')}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; })()}
+                                        </p>
+                                    </div>
+                                    <button onClick={() => setSelectedAppointment(null)} className="text-white/80 hover:text-white">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-6 space-y-5">
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Patient Information</h4>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-lavender-100 flex items-center justify-center text-lavender-700 font-bold text-lg">
+                                            {selectedAppointment.patientId?.name?.charAt(0) || '?'}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">{selectedAppointment.patientId?.name || 'Unknown Patient'}</p>
+                                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                                                <Mail className="w-3 h-3" />
+                                                {selectedAppointment.patientId?.email || 'N/A'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr className="border-gray-100" />
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Appointment Info</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span className="text-sm text-gray-700">
+                                                {new Date(selectedAppointment.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Clock className="w-4 h-4 text-gray-400" />
+                                            <span className="text-sm text-gray-700">
+                                                {(() => { const [h, m] = selectedAppointment.time.split(':'); const hr = parseInt(h); return `${(hr % 12 || 12).toString().padStart(2, '0')}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; })()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="w-4 h-4 text-gray-400" />
+                                            <span className="text-sm text-gray-700">{selectedAppointment.reason || 'No reason provided'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="w-4 h-4 text-gray-400" />
+                                            <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-700'
+                                                    : selectedAppointment.status === 'completed' ? 'bg-blue-100 text-blue-700'
+                                                        : selectedAppointment.status === 'cancelled' ? 'bg-red-100 text-red-700'
+                                                            : 'bg-yellow-100 text-yellow-700'
+                                                }`}>
+                                                {selectedAppointment.status?.charAt(0).toUpperCase() + selectedAppointment.status?.slice(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                                <button onClick={() => setSelectedAppointment(null)} className="w-full py-2 bg-lavender-600 text-white rounded-lg hover:bg-lavender-700 transition-colors text-sm font-medium">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </main>

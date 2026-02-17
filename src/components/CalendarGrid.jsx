@@ -104,23 +104,24 @@ const CalendarGrid = ({ availability = [], bookedSlots = [], onSlotSelect, isDoc
 
         for (let i = start; i < end; i++) {
             const timeString = `${i.toString().padStart(2, '0')}:00`;
-            const isBooked = bookedSlots.some(
-                booking => isSameDay(new Date(booking.date), selectedDate) && booking.time === timeString && booking.status !== 'cancelled'
+            const booking = bookedSlots.find(
+                b => isSameDay(new Date(b.date), selectedDate) && b.time === timeString && b.status !== 'cancelled'
             );
 
             slots.push({
                 time: timeString,
-                isBooked: isBooked
+                isBooked: !!booking,
+                booking: booking || null
             });
 
-            // Add half-hour slot if needed, keeping simple for now
             const halfHourString = `${i.toString().padStart(2, '0')}:30`;
-            const isHalfHourBooked = bookedSlots.some(
-                booking => isSameDay(new Date(booking.date), selectedDate) && booking.time === halfHourString && booking.status !== 'cancelled'
+            const halfHourBooking = bookedSlots.find(
+                b => isSameDay(new Date(b.date), selectedDate) && b.time === halfHourString && b.status !== 'cancelled'
             );
             slots.push({
                 time: halfHourString,
-                isBooked: isHalfHourBooked
+                isBooked: !!halfHourBooking,
+                booking: halfHourBooking || null
             });
         }
         return slots;
@@ -139,12 +140,12 @@ const CalendarGrid = ({ availability = [], bookedSlots = [], onSlotSelect, isDoc
                     <button
                         key={index}
                         disabled={slot.isBooked && !isDoctorView}
-                        onClick={() => onSlotSelect({ date: selectedDate, time: slot.time })}
+                        onClick={() => onSlotSelect({ date: selectedDate, time: slot.time, booking: slot.booking })}
                         className={`
                             py-2 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-2
                             ${slot.isBooked
                                 ? isDoctorView
-                                    ? 'bg-red-50 border-red-200 text-red-700 cursor-default'
+                                    ? 'bg-red-50 border-red-200 text-red-700 cursor-pointer hover:bg-red-100'
                                     : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white border-gray-200 hover:border-lavender-500 hover:text-lavender-600 text-gray-700 focus:ring-2 focus:ring-lavender-500 focus:bg-lavender-50'
                             }
