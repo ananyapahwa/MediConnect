@@ -21,13 +21,20 @@ mongoose.connect(MONGO_URI)
 const protectedRoutes = require('./routes/protectedRoutes.cjs');
 const doctorRoutes = require('./routes/doctorRoutes.cjs');
 const appointmentRoutes = require('./routes/appointmentRoutes.cjs');
+const chatRoutes = require('./routes/chatRoutes.cjs');
+const prescriptionRoutes = require('./routes/prescriptionRoutes.cjs');
+const aiRoutes = require('./routes/aiRoutes.cjs');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+

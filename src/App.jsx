@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import Home from './pages/Home';
 import PatientHome from './pages/PatientHome';
 import DoctorHome from './pages/DoctorHome';
 import Doctors from './pages/Doctors';
@@ -9,6 +8,8 @@ import Appointments from './pages/Appointments';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DoctorDashboard from './pages/DoctorDashboard';
+import Chat from './pages/Chat';
+import Prescriptions from './pages/Prescriptions';
 import PrivateRoute from './components/PrivateRoute';
 
 // Helper component to redirect root path based on role
@@ -37,6 +38,8 @@ function App() {
         <Route path="/patient-home" element={<PrivateRoute allowedRoles={['patient']}><Layout><PatientHome /></Layout></PrivateRoute>} />
         <Route path="/doctors" element={<PrivateRoute allowedRoles={['patient']}><Layout><Doctors /></Layout></PrivateRoute>} />
         <Route path="/appointments" element={<PrivateRoute allowedRoles={['patient']}><Layout><Appointments /></Layout></PrivateRoute>} />
+        <Route path="/chat" element={<PrivateRoute allowedRoles={['patient']}><Layout><Chat /></Layout></PrivateRoute>} />
+        <Route path="/prescriptions" element={<PrivateRoute allowedRoles={['patient']}><Layout><Prescriptions /></Layout></PrivateRoute>} />
 
         {/* Doctor Routes */}
         <Route path="/doctor-home" element={<PrivateRoute allowedRoles={['doctor']}><Layout><DoctorHome /></Layout></PrivateRoute>} />

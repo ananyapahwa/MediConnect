@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Users, Calendar, Settings, LogOut, Save, Clock, CheckCircle, XCircle, X, Mail, FileText, AlertCircle } from 'lucide-react';
+import { Activity, Users, Calendar, Settings, LogOut, Save, Clock, CheckCircle, XCircle, X, Mail, FileText, AlertCircle, MessageSquare, Send, Pill, Plus, Trash2 } from 'lucide-react';
 import CalendarGrid from '../components/CalendarGrid';
 
 const DoctorDashboard = () => {
@@ -20,6 +20,24 @@ const DoctorDashboard = () => {
     const [message, setMessage] = useState('');
     const [selectedAppointment, setSelectedAppointment] = useState(null);
 
+    // Chat state
+    const [inbox, setInbox] = useState([]);
+    const [selectedChat, setSelectedChat] = useState(null); // { otherUserId, otherUserName }
+    const [chatMessages, setChatMessages] = useState([]);
+    const [chatInput, setChatInput] = useState('');
+    const [chatSending, setChatSending] = useState(false);
+    const chatEndRef = useRef(null);
+    const chatPollRef = useRef(null);
+
+    // Prescriptions state
+    const [doctorPrescriptions, setDoctorPrescriptions] = useState([]);
+    const [rxForm, setRxForm] = useState({
+        patientEmail: '', diagnosis: '', instructions: '', followUpDate: '',
+        medicines: [{ name: '', dosage: '', frequency: '', duration: '' }]
+    });
+    const [rxLoading, setRxLoading] = useState(false);
+    const [rxMessage, setRxMessage] = useState('');
+
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         const token = localStorage.getItem('token');
@@ -38,6 +56,8 @@ const DoctorDashboard = () => {
         setUser(parsedUser);
         fetchAppointments(token);
         fetchProfile(token);
+        fetchInbox(token);
+        fetchDoctorPrescriptions(token);
     }, [navigate]);
 
     const fetchAppointments = async (token) => {
@@ -72,6 +92,86 @@ const DoctorDashboard = () => {
             console.error('Error fetching profile:', error);
         }
     };
+
+    const fetchInbox = async (token) => {
+        try {
+            const res = await fetch('http://localhost:3000/api/chat/inbox', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) setInbox(data);
+        } catch (err) { console.error('inbox err', err); }
+    };
+
+    const fetchChatMessages = async (otherUserId, silent = false) => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`http://localhost:3000/api/chat/${otherUserId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) setChatMessages(data);
+        } catch (err) { console.error('chat fetch err', err); }
+    };
+
+    const handleSendChatMessage = async (e) => {
+        e.preventDefault();
+        if (!chatInput.trim() || !selectedChat) return;
+        setChatSending(true);
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('http://localhost:3000/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ receiverId: selectedChat.otherUserId, content: chatInput })
+            });
+            const data = await res.json();
+            if (res.ok) { setChatMessages(prev => [...prev, data]); setChatInput(''); fetchInbox(token); }
+        } catch (err) { console.error('send chat err', err); }
+        finally { setChatSending(false); }
+    };
+
+    const openDoctorChat = (msg) => {
+        const doctorUserId = user?._id || user?.id;
+        const isSender = msg.senderId._id?.toString() === doctorUserId?.toString();
+        const other = isSender ? msg.receiverId : msg.senderId;
+        setSelectedChat({ otherUserId: other?._id, otherUserName: other?.name });
+        fetchChatMessages(other?._id);
+    };
+
+    const fetchDoctorPrescriptions = async (token) => {
+        try {
+            const res = await fetch('http://localhost:3000/api/prescriptions/doctor', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) setDoctorPrescriptions(data);
+        } catch (err) { console.error('prescriptions err', err); }
+    };
+
+    const handleCreatePrescription = async (e) => {
+        e.preventDefault();
+        setRxLoading(true); setRxMessage('');
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('http://localhost:3000/api/prescriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(rxForm)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setRxMessage('Prescription created successfully!');
+                setRxForm({ patientEmail: '', diagnosis: '', instructions: '', followUpDate: '', medicines: [{ name: '', dosage: '', frequency: '', duration: '' }] });
+                fetchDoctorPrescriptions(token);
+            } else { setRxMessage(data.message || 'Failed to create prescription.'); }
+        } catch (err) { setRxMessage('Error creating prescription.'); }
+        finally { setRxLoading(false); }
+    };
+
+    const addMedicine = () => setRxForm(f => ({ ...f, medicines: [...f.medicines, { name: '', dosage: '', frequency: '', duration: '' }] }));
+    const removeMedicine = (i) => setRxForm(f => ({ ...f, medicines: f.medicines.filter((_, idx) => idx !== i) }));
+    const updateMedicine = (i, field, value) => { const meds = [...rxForm.medicines]; meds[i][field] = value; setRxForm(f => ({ ...f, medicines: meds })); };
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
@@ -151,6 +251,19 @@ const DoctorDashboard = () => {
                     <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <Settings className="h-5 w-5" />
                         <span className="font-medium">Settings & Schedule</span>
+                    </button>
+                    <button onClick={() => setActiveTab('chat')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'chat' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <MessageSquare className="h-5 w-5" />
+                        <span className="font-medium">Patient Messages</span>
+                        {inbox.filter(m => !m.isRead && m.receiverId?._id?.toString() === (user?._id || user?.id)?.toString()).length > 0 && (
+                            <span className="ml-auto bg-lavender-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {inbox.filter(m => !m.isRead).length}
+                            </span>
+                        )}
+                    </button>
+                    <button onClick={() => setActiveTab('prescriptions')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'prescriptions' ? 'bg-lavender-50 text-lavender-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <Pill className="h-5 w-5" />
+                        <span className="font-medium">Prescriptions</span>
                     </button>
                 </nav>
                 <div className="absolute bottom-0 w-64 p-4 border-t">
@@ -269,6 +382,169 @@ const DoctorDashboard = () => {
                     </div>
                 )}
 
+                {/* ===== CHAT TAB ===== */}
+                {activeTab === 'chat' && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex" style={{ height: '70vh' }}>
+                        {/* Inbox */}
+                        <div className={`w-72 border-r border-gray-100 flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+                            <div className="p-4 border-b border-gray-100">
+                                <h3 className="font-semibold text-gray-700">Patient Inbox</h3>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                                {inbox.length === 0 ? (
+                                    <div className="p-6 text-center text-gray-400 text-sm">No messages yet.</div>
+                                ) : inbox.map((msg) => {
+                                    const doctorUserId = user?._id || user?.id;
+                                    const isSender = msg.senderId._id?.toString() === doctorUserId?.toString();
+                                    const other = isSender ? msg.receiverId : msg.senderId;
+                                    return (
+                                        <button key={msg._id} onClick={() => openDoctorChat(msg)}
+                                            className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 ${selectedChat?.otherUserId === other?._id ? 'bg-lavender-50' : ''}`}>
+                                            <div className="w-10 h-10 rounded-full bg-lavender-100 flex items-center justify-center text-lavender-700 font-bold">
+                                                {other?.name?.charAt(0)?.toUpperCase() || '?'}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-sm text-gray-800 truncate">{other?.name}</p>
+                                                <p className="text-xs text-gray-400 truncate">{msg.content}</p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        {/* Chat Window */}
+                        <div className="flex-1 flex flex-col">
+                            {!selectedChat ? (
+                                <div className="flex items-center justify-center h-full text-gray-400 text-sm">Select a conversation</div>
+                            ) : (
+                                <>
+                                    <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-lavender-100 flex items-center justify-center text-lavender-700 font-bold">
+                                            {selectedChat.otherUserName?.charAt(0)?.toUpperCase()}
+                                        </div>
+                                        <p className="font-semibold text-gray-800">{selectedChat.otherUserName}</p>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                                        {chatMessages.map((msg) => {
+                                            const doctorUserId = user?._id || user?.id;
+                                            const isMine = msg.senderId._id?.toString() === doctorUserId?.toString() || msg.senderId === doctorUserId?.toString();
+                                            return (
+                                                <div key={msg._id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                                    <div className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMine ? 'bg-lavender-600 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
+                                                        {msg.content}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        <div ref={chatEndRef} />
+                                    </div>
+                                    <form onSubmit={handleSendChatMessage} className="p-3 bg-white border-t border-gray-100 flex gap-2">
+                                        <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                                            placeholder="Type a message..." disabled={chatSending}
+                                            className="flex-1 bg-gray-50 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 border border-gray-200" />
+                                        <button type="submit" disabled={chatSending || !chatInput.trim()}
+                                            className="bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 text-white p-2.5 rounded-full transition-colors">
+                                            <Send className="w-4 h-4" />
+                                        </button>
+                                    </form>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ===== PRESCRIPTIONS TAB ===== */}
+                {activeTab === 'prescriptions' && (
+                    <div className="space-y-6">
+                        {/* Write New Prescription */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Pill className="w-5 h-5 text-purple-500" /> Write New Prescription</h2>
+                            {rxMessage && <div className={`p-3 mb-4 rounded-lg text-sm ${rxMessage.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{rxMessage}</div>}
+                            <form onSubmit={handleCreatePrescription} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Patient Email</label>
+                                        <input type="email" value={rxForm.patientEmail} onChange={e => setRxForm(f => ({...f, patientEmail: e.target.value}))}
+                                            placeholder="patient@example.com" required
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400" />
+                                        <p className="text-xs text-gray-400 mt-1">Find this from the appointment details modal.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
+                                        <input type="text" value={rxForm.diagnosis} onChange={e => setRxForm(f => ({...f, diagnosis: e.target.value}))}
+                                            placeholder="e.g. Upper respiratory infection" required
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-sm font-medium text-gray-700">Medicines</label>
+                                        <button type="button" onClick={addMedicine} className="text-lavender-600 text-sm flex items-center gap-1 hover:text-lavender-800">
+                                            <Plus className="w-4 h-4" /> Add Medicine
+                                        </button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {rxForm.medicines.map((med, i) => (
+                                            <div key={i} className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-gray-50 p-3 rounded-xl items-end">
+                                                <div><label className="text-xs text-gray-500">Name</label>
+                                                    <input value={med.name} onChange={e => updateMedicine(i, 'name', e.target.value)} placeholder="e.g. Amoxicillin" required className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" /></div>
+                                                <div><label className="text-xs text-gray-500">Dosage</label>
+                                                    <input value={med.dosage} onChange={e => updateMedicine(i, 'dosage', e.target.value)} placeholder="e.g. 500mg" required className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" /></div>
+                                                <div><label className="text-xs text-gray-500">Frequency</label>
+                                                    <input value={med.frequency} onChange={e => updateMedicine(i, 'frequency', e.target.value)} placeholder="e.g. Twice a day" required className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" /></div>
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1"><label className="text-xs text-gray-500">Duration</label>
+                                                        <input value={med.duration} onChange={e => updateMedicine(i, 'duration', e.target.value)} placeholder="e.g. 7 days" required className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" /></div>
+                                                    {rxForm.medicines.length > 1 && <button type="button" onClick={() => removeMedicine(i)} className="text-red-400 hover:text-red-600 mt-4"><Trash2 className="w-4 h-4" /></button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Instructions (optional)</label>
+                                        <textarea value={rxForm.instructions} onChange={e => setRxForm(f => ({...f, instructions: e.target.value}))}
+                                            placeholder="e.g. Take after meals. Avoid alcohol." rows={2}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date (optional)</label>
+                                        <input type="date" value={rxForm.followUpDate} onChange={e => setRxForm(f => ({...f, followUpDate: e.target.value}))}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400" />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button type="submit" disabled={rxLoading} className="px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2">
+                                        {rxLoading ? 'Creating...' : <><FileText className="w-4 h-4" /> Create Prescription</>}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Past Prescriptions */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">Prescriptions Issued</h2>
+                            {doctorPrescriptions.length === 0 ? (
+                                <p className="text-gray-400 text-sm">No prescriptions issued yet.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {doctorPrescriptions.map(rx => (
+                                        <div key={rx._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                            <div>
+                                                <p className="font-semibold text-gray-800 text-sm">{rx.patientId?.name || 'Patient'}</p>
+                                                <p className="text-xs text-gray-500">{rx.diagnosis}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{new Date(rx.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <span className="text-xs bg-purple-50 text-purple-600 px-3 py-1 rounded-full font-medium">{rx.medicines.length} medicine{rx.medicines.length > 1 ? 's' : ''}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Appointment Detail Modal */}
                 {selectedAppointment && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedAppointment(null)}>
@@ -296,9 +572,11 @@ const DoctorDashboard = () => {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-800">{selectedAppointment.patientId?.name || 'Unknown Patient'}</p>
-                                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                                                <Mail className="w-3 h-3" />
-                                                {selectedAppointment.patientId?.email || 'N/A'}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1 text-sm text-gray-500">
+                                                    <Mail className="w-3 h-3" />
+                                                    {selectedAppointment.patientId?.email || 'N/A'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
